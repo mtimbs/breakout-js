@@ -64,7 +64,7 @@ const SPRITE_MAP = {
 const ctx = canvas.getContext("2d");
 
 // Ball
-let x = canvas.width / 2;
+let x = canvas.width * 0.5;
 let y = canvas.height - 2 * BALL_RADIUS - 0.5 * PADDLE_HEIGHT;
 
 // Ball Rate of Change
@@ -112,7 +112,7 @@ function moveBall() {
 // Paddle
 // Paddle starting position
 
-let paddle_x = (canvas.width - PADDLE_WIDTH) / 2.0;
+let paddle_x = (canvas.width - PADDLE_WIDTH) * 0.5;
 let rightPressed = false;
 let leftPressed = false;
 
@@ -182,6 +182,7 @@ function drawBricks() {
   }
 }
 
+let remaining_bricks = BRICK_ROW_COUNT * BRICK_COLUMN_COUNT;
 function collisionDetection() {
   for (let c = 0; c < BRICK_COLUMN_COUNT; c++) {
     for (let r = 0; r < BRICK_ROW_COUNT; r++) {
@@ -207,7 +208,8 @@ function collisionDetection() {
       ) {
         dy = -dy;
         b.destroyed = true;
-        score++;
+        score += 10 * (BRICK_ROW_COUNT - r);
+        remaining_bricks--;
         return;
       }
       if (
@@ -219,7 +221,8 @@ function collisionDetection() {
       ) {
         dy = -dy;
         b.destroyed = true;
-        score++;
+        score += 10 * (BRICK_ROW_COUNT - r);
+        remaining_bricks--;
         return;
       }
       if (
@@ -231,7 +234,8 @@ function collisionDetection() {
       ) {
         dx = -dx;
         b.destroyed = true;
-        score++;
+        score += 10 * (BRICK_ROW_COUNT - r);
+        remaining_bricks--;
         return;
       }
       if (
@@ -243,7 +247,8 @@ function collisionDetection() {
       ) {
         dx = -dx;
         b.destroyed = true;
-        score++;
+        score += 10 * (BRICK_ROW_COUNT - r);
+        remaining_bricks--;
         return;
       }
     }
@@ -258,7 +263,7 @@ function drawScore() {
   ctx.font = `${FONT_SIZE}px CustomFont`;
   ctx.fillStyle = "#EEE";
   ctx.fillText(
-    String(score).padStart(4, "0"),
+    String(score).padStart(5, "0"),
     BRICK_OFFSET_SIDE,
     1.25 * FONT_SIZE,
   );
@@ -266,8 +271,8 @@ function drawScore() {
 
 // Lives
 let lives = 3;
-const HEART_WIDTH = 0.6 * TOP_PADDING;
-const HEART_PADDING = 0.1 * HEART_WIDTH;
+const HEART_WIDTH = 0.5 * TOP_PADDING;
+const HEART_PADDING = 0.25 * HEART_WIDTH;
 
 function drawLives() {
   const [sx, sy, sw, sh] = SPRITE_MAP.lives;
@@ -286,27 +291,33 @@ function drawLives() {
   }
 }
 
-function checkGameOver() {
-  // Lose if ball hits bottom of screen not on paddle
-  if (lives === 0) {
-    alert("GAME OVER");
-    document.location.reload();
-  }
-
+function checkLossOfLife() {
   const leftEdge = x - BALL_RADIUS;
   const rightEdge = x + BALL_RADIUS;
+  const topEdge = y + BALL_RADIUS;
   if (
-    y + dy > canvas.height - BALL_RADIUS &&
+    topEdge > canvas.height &&
     (rightEdge < paddle_x || leftEdge > paddle_x + PADDLE_WIDTH)
   ) {
     lives -= 1;
+    // little glitch animation for feedback
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // reset ball to fire automatically
     x = canvas.width * 0.5;
     y = canvas.height - 2 * BALL_RADIUS - 0.5 * PADDLE_HEIGHT;
     dy = -INITIAL_DY;
-  }
 
+    if (lives === 0) {
+      alert("GAME OVER");
+      document.location.reload();
+    }
+  }
+}
+
+function checkLevelWon() {
   // WIN when all bricks are gons
-  if (score === BRICK_ROW_COUNT * BRICK_COLUMN_COUNT) {
+  if (remaining_bricks == 0) {
     alert("YOU WIN, CONGRATULATIONS!");
     document.location.reload();
   }
@@ -331,28 +342,7 @@ function drawBorderBricks() {
   }
 }
 
-function keyDownHandler(e) {
-  if (e.key === "Right" || e.key === "ArrowRight") {
-    rightPressed = true;
-  } else if (e.key === "Left" || e.key === "ArrowLeft") {
-    leftPressed = true;
-  } else if (e.key === " ") {
-    start(true);
-  } else if (e.key === "Escape") {
-    cancelAnimationFrame(frame);
-  }
-}
-
-function keyUpHandler(e) {
-  if (e.key === "Right" || e.key === "ArrowRight") {
-    rightPressed = false;
-  } else if (e.key === "Left" || e.key === "ArrowLeft") {
-    leftPressed = false;
-  }
-}
-
-let frame = undefined;
-function start() {
+function renderGame() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBorderBricks();
   drawBricks();
@@ -363,15 +353,114 @@ function start() {
   moveBall();
   drawScore();
   drawLives();
-  checkGameOver();
+  checkLossOfLife();
+  checkLevelWon();
+}
+
+function renderMenu() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const items = [
+    [8 * SCALING_FACTOR, "Instructions"],
+    [8 * SCALING_FACTOR, ""],
+    [4 * SCALING_FACTOR, "> [Space] to start/stop the ball."],
+    [4 * SCALING_FACTOR, "> Destroy all the bricks to get to the next level."],
+    [
+      4 * SCALING_FACTOR,
+      "> Bricks will drop powerups randomly which will help you",
+    ],
+  ];
+  ctx.fillStyle = "#EEE";
+
+  for (const [i, [font_size, text]] of items.entries()) {
+    console.log({ i, font_size, text });
+    ctx.font = `${font_size}px CustomFont`;
+    ctx.fillText(
+      text,
+      canvas.width * 0.5 - text.length * font_size * 0.5,
+      canvas.height * 0.5 +
+        items.length * 0.5 -
+        16 * SCALING_FACTOR * (items.length - i),
+    );
+  }
+
+  text = "* START GAME *";
+  const font_size = 10 * SCALING_FACTOR;
+  ctx.fillStyle = "#32CD32";
+  ctx.font = `${font_size}px CustomFont`;
+  ctx.fillText(
+    text,
+    canvas.width * 0.5 - text.length * font_size * 0.5,
+    canvas.height * 0.5 + 6 * SCALING_FACTOR * items.length * 0.5 + font_size,
+  );
+}
+
+let frame = undefined;
+let display = "Menu";
+function start() {
+  if (display == "Menu") {
+    renderMenu();
+  } else if (display == "Game") {
+    renderGame();
+  }
   frame = requestAnimationFrame(start);
+}
+
+function pauseGame() {
+  cancelAnimationFrame(frame);
+  frame = undefined;
 }
 
 // Initialise canvas
 customFont.load().then((font) => {
   document.fonts.add(font);
   start();
-  cancelAnimationFrame(frame);
-  document.addEventListener("keydown", keyDownHandler, false);
-  document.addEventListener("keyup", keyUpHandler, false);
+  pauseGame();
 });
+
+function keyDownHandler(e) {
+  if (display == "Game") {
+    if (e.key === "Right" || e.key === "ArrowRight") {
+      rightPressed = true;
+    } else if (e.key === "Left" || e.key === "ArrowLeft") {
+      leftPressed = true;
+    } else if (e.key === " ") {
+      if (frame) {
+        pauseGame();
+      } else {
+        start();
+      }
+    }
+  }
+}
+
+function displayMenu() {
+  display = "Menu";
+  start();
+  pauseGame();
+}
+
+function displayGame() {
+  display = "Game";
+  start();
+  pauseGame();
+}
+
+function keyUpHandler(e) {
+  if (display == "Game") {
+    if (e.key === "Right" || e.key === "ArrowRight") {
+      rightPressed = false;
+    } else if (e.key === "Left" || e.key === "ArrowLeft") {
+      leftPressed = false;
+    } else if (e.key === "Escape") {
+      pauseGame();
+      displayMenu();
+    }
+  } else if (display == "Menu") {
+    if (e.key === "Enter") {
+      displayGame();
+    }
+  }
+}
+document.addEventListener("keydown", keyDownHandler, false);
+document.addEventListener("keyup", keyUpHandler, false);
