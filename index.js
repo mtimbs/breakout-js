@@ -24,7 +24,7 @@ const BALL_RADIUS = 0.0075 * canvas.width;
 const PADDLE_HEIGHT = 0.03 * NATIVE_HEIGHT * SCALING_FACTOR;
 const PADDLE_WIDTH = 0.125 * canvas.width;
 
-const BRICK_ROW_COUNT = 2;
+const BRICK_ROW_COUNT = 6;
 const BRICK_COLUMN_COUNT = 15;
 const BRICK_PADDING = 0.0015 * canvas.width;
 const BRICK_OFFSET_TOP = 4 * BALL_RADIUS;
@@ -46,7 +46,11 @@ const SPRITE_MAP = {
   bricks: [
     [772, 520, 384, 128], // border
     [772, 260, 384, 128], // Red
+    [772, 0, 384, 128], // Orange
     [386, 390, 384, 128], // Yellow
+    [0, 130, 384, 128], // Green
+    [772, 390, 384, 128], // Blue
+    [0, 390, 384, 128], // Purple
   ],
   paddle: [
     [1158, 462, 243, 64],
